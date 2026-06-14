@@ -1,0 +1,379 @@
+html,
+body {
+    height: 100%;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #000;
+    position: fixed;
+}
+
+:root {
+    --koic-frame-width: 380px;
+}
+
+#terminal-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: min(100vw, var(--koic-frame-width));
+    height: 100vh;
+    background: #000;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+#terminal {
+    width: 100%;
+    height: 100%;
+    touch-action: manipulation;
+}
+
+/* Debug HUD (toggle with Ctrl+Alt+D). */
+#koic-debug-hud {
+    display: none;
+    position: fixed;
+    top: 6px;
+    left: 6px;
+    z-index: 60000;
+    max-width: min(95vw, 520px);
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.85);
+    border: 1px solid rgba(51,255,51,0.6);
+    color: #33FF33;
+    font: 12px/1.25 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    white-space: pre;
+    pointer-events: none;
+}
+
+/* Prevent ligatures/kerning from changing cell widths. */
+#terminal .xterm,
+#terminal .xterm * {
+    font-variant-ligatures: none !important;
+    font-feature-settings: "liga" 0, "calt" 0 !important;
+    letter-spacing: 0 !important;
+}
+
+/* Reading pane is positioned inside the terminal frame so it resizes reliably above mobile keyboards. */
+#reading-pane {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    background: #000;
+    color: #33FF33;
+    padding: 0 4px;
+    font-size: 16px;
+    line-height: 1.35;
+    overflow-y: scroll;
+    z-index: 500;
+    display: none;
+    box-sizing: border-box;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+        "Courier New", monospace;
+    text-decoration: none;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    user-select: text;
+    -webkit-user-select: text;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+}
+
+/* ANSI-mode reading pane: per-line blocks, wrapped by CSS (pre-wrap). */
+#reading-pane .pane-ansi-line {
+    display: block;
+    padding: 2px 0;
+}
+
+/* Clickable URLs in the reading pane should inherit ANSI colors. */
+#reading-pane a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+#reading-pane a:visited {
+    color: inherit;
+}
+
+#phantom-input {
+    position: fixed;
+    top: 0;
+    left: -1000px;
+    width: 2px;
+    height: 2px;
+    opacity: 0.01;
+    border: none;
+    z-index: 999999;
+    caret-color: transparent;
+}
+
+#editor-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: min(100vw, var(--koic-frame-width));
+    height: 100vh;
+    background: #000;
+    z-index: 20000;
+    display: none;
+    flex-direction: column;
+}
+
+#scratchpad {
+    flex: 1;
+    background: #111;
+    color: #33FF33;
+    border: none;
+    padding: 15px;
+    font-size: 16px;
+    font-family: monospace;
+    outline: none;
+    resize: none;
+}
+
+.editor-btn-bar {
+    height: calc(80px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: #222;
+    border-top: 2px solid #33FF33;
+    flex-shrink: 0;
+}
+
+#mobile-nav-bar {
+    display: none;
+    height: calc(60px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    box-sizing: border-box;
+    width: min(100vw, var(--koic-frame-width));
+    background: #222;
+    border-top: 2px solid #33FF33;
+    z-index: 10005;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    align-items: stretch;
+    gap: 6px;
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
+#mobile-nav-bar button {
+    height: 100%;
+}
+
+#kbd-btn {
+    flex: 0 0 28%;
+    background: #444;
+    color: #fff;
+}
+
+#next-btn {
+    flex: 1 1 auto;
+    background: #33FF33;
+    color: #000;
+}
+
+.post-header {
+    background: #222 !important;
+    color: #fff !important;
+    padding: 8px 10px;
+    font-family: monospace;
+    font-size: 14px;
+    text-decoration: none !important;
+}
+
+.cmd-line {
+    background: #111 !important;
+    color: #33FF33 !important;
+    padding: 8px 10px;
+    font-family: monospace;
+    font-size: 14px;
+    text-decoration: none !important;
+    border-top: 2px solid #33FF33;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.pane-block {
+    padding: 5px 0;
+}
+
+/* Reading pane output is already wrapped to 40 cols by KOIC; don't let CSS re-wrap
+   (which causes "hanging words" when font metrics/padding reduce effective width). */
+#reading-pane .pane-block,
+#reading-pane .post-header,
+#reading-pane .cmd-line {
+    white-space: pre !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+}
+button {
+    padding: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    font-size: 18px;
+}
+
+#start-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #000;
+    z-index: 99999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#connect-btn {
+    background: #000;
+    color: #33FF33;
+    border: 2px solid #33FF33;
+    padding: 20px 40px;
+    font-size: 20px;
+    font-weight: bold;
+    font-family: monospace;
+}
+
+/* Client config UI */
+/* Config is intended to be opened via BBS hook ("cc"); keep button hidden for now. */
+#cfg-fab {
+    display: none;
+    position: fixed;
+    top: 8px;
+    right: 8px;
+    z-index: 30000;
+    background: #111;
+    color: #33FF33;
+    border: 2px solid #33FF33;
+    padding: 8px 10px;
+    font-family: monospace;
+    font-size: 14px;
+}
+
+#cfg-fab:active {
+    background: #222;
+}
+
+#cfg-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 40000;
+    display: none;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0.92);
+}
+
+#cfg-panel {
+    position: absolute;
+    top: 8vh;
+    left: 5vw;
+    width: 90vw;
+    max-width: 520px;
+    background: #000;
+    border: 2px solid #33FF33;
+    color: #33FF33;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+        "Courier New", monospace;
+}
+
+#cfg-header {
+    background: #111;
+    border-bottom: 2px solid #33FF33;
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#cfg-title {
+    font-weight: bold;
+}
+
+#cfg-close {
+    background: #111;
+    color: #33FF33;
+    border: 2px solid #33FF33;
+    padding: 6px 10px;
+    font-size: 14px;
+}
+
+#cfg-body {
+    padding: 12px;
+}
+
+.cfg-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(51, 255, 51, 0.25);
+}
+
+.cfg-row:last-child {
+    border-bottom: none;
+}
+
+.cfg-row label {
+    flex: 1;
+}
+
+.cfg-row input[type="checkbox"] {
+    transform: scale(1.2);
+}
+
+.cfg-row.cfg-row-col {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.cfg-row.cfg-row-col label {
+    flex: 0 0 auto;
+}
+.cfg-row textarea {
+    width: 100%;
+    background: #111;
+    color: #33FF33;
+    border: 2px solid #33FF33;
+    padding: 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 14px;
+    box-sizing: border-box;
+    resize: vertical;
+}
+.cfg-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 12px;
+}
+
+.cfg-btn {
+    flex: 1;
+    background: #111;
+    color: #33FF33;
+    border: 2px solid #33FF33;
+    padding: 10px;
+    font-size: 14px;
+}

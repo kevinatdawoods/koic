@@ -1,0 +1,12 @@
+# Log files
+*.log
+koic-test.log
+koic-d.log
+protocol_trace.log
+koic-d-trace.log
+
+# macOS noise
+.DS_Store
+
+# Perl temp files
+*.tmp

@@ -1,0 +1,44 @@
+/* koic.css - 2025-06-12 - responsive layout with flex */
+html, body { height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; background: #000; color: #00CC00; }
+body { display: flex; flex-direction: column; font-family: var(--koic-font, 'Courier New', monospace); }
+
+#start-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 30000; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+#start-prompt { border: 2px solid #00CC00; padding: 40px; text-align: center; line-height: 1.6; background: #050505; }
+#start-prompt h1 { margin: 0 0 10px 0; font-size: 22px; color: #00CC00; }
+
+#main-layout { display: flex; flex-direction: row; height: 85vh; width: 100%; min-height: 0; }
+#terminal-container { flex: 1; background: #000; position: relative; display: flex; flex-direction: column; min-height: 0; border-right: 1px solid #222; }
+#terminal-gutter { flex: 1; padding: 10px 0 0 15px; box-sizing: border-box; display: flex; flex-direction: column; }
+#terminal { flex: 1; width: 100%; height: 100%; }
+
+#desktop-sidebar { width: 280px; background: #0a0a0a; padding: 15px; overflow-y: auto; flex-shrink: 0; border-left: 1px solid #222; }
+h3 { color: #00CC00; font-size: 11px; margin: 15px 0 8px 0; border-bottom: 1px solid #333; padding-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; }
+.button-group { display: flex; flex-wrap: wrap; gap: 6px; }
+.dash-btn { flex: 1 1 45%; background: #111; color: #00CC00; border: 1px solid #333; padding: 8px; font-size: 11px; cursor: pointer; text-align: left; font-family: monospace; outline: none; }
+.dash-btn:hover { background: #222; border-color: #00CC00; }
+.wide { flex: 1 1 100% !important; text-align: center !important; font-weight: bold; border-color: #444; margin-bottom: 4px; }
+
+#status-bar { height: 15vh; background: #070707; color: #00CC00; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; border-top: 1px solid #1a1a1a; font-size: 12px; }
+#status-left { display: flex; align-items: center; gap: 12px; }
+#status-msg { font-weight: bold; letter-spacing: 1px; }
+#status-msg.status-ok { color: #00ff66; }
+#status-msg.status-warn { color: #ffd24d; }
+#status-msg.status-bad { color: #ff4d4d; }
+
+.full-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; display: none; flex-direction: column; }
+#editor-panel { display: none; flex-direction: column; flex-shrink: 0; height: 40%; min-height: 80px; background: #050505; border-bottom: none; }
+#editor-drag-handle { display: none; height: 10px; background: #111; cursor: ns-resize; flex-shrink: 0; align-items: center; justify-content: center; border-top: 2px solid #00CC00; border-bottom: 1px solid #333; }
+#editor-drag-handle::after { content: ''; display: block; width: 40px; height: 3px; background: #00CC00; border-radius: 2px; opacity: 0.5; }
+#editor-panel.active { display: flex; }
+#editor-drag-handle.active { display: flex; }
+#scratchpad { flex: 1; background: #050505; color: #00CC00; border: none; padding: 25px; font-size: 18px; font-family: var(--koic-font, 'Courier New', monospace); outline: none; resize: none; }
+
+#settings-modal { align-items: center; justify-content: center; }
+.modal-content { background: #111; border: 1px solid #00CC00; padding: 30px; width: 400px; }
+#blocked-modal .modal-content { width: 70vw; max-width: 900px; }
+#blocked-viewer { background: #000; border: 1px solid #333; color: #00CC00; padding: 10px; width: 100%; height: 45vh; margin: 10px 0; font-family: var(--koic-font, 'Courier New', monospace); resize: none; }
+.modal-content input { background: #000; border: 1px solid #333; color: #00CC00; padding: 10px; width: 100%; margin: 10px 0; font-family: monospace; }
+.modal-content select { background: #000; border: 1px solid #333; color: #00CC00; padding: 10px; width: 100%; margin: 10px 0; font-family: monospace; }
+
+.editor-btn-bar { height: 60px; display: flex; justify-content: space-around; align-items: center; background: #111; border-top: 1px solid #00CC00; }
+.scale-btn { background: #111; color: #00CC00; border: 1px solid #00CC00; padding: 8px 16px; font-weight: bold; cursor: pointer; }

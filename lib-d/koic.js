@@ -1,4 +1,3 @@
-// koic.js - 2025-06-13
 const KOIC_VERSION = window.KOIC_VERSION || '';
 
 // ── TinyURL shortening ────────────────────────────────────────────────────────
@@ -575,13 +574,8 @@ function setupTerminal() {
 	
 	setTimeout(() => { fit_addon.fit(); term_obj.focus(); }, 100);
 
-	// Refit terminal on window resize (debounced to avoid thrashing during drag).
-	let _koic_resize_timer = null;
 	window.addEventListener('resize', () => {
-		clearTimeout(_koic_resize_timer);
-		_koic_resize_timer = setTimeout(() => {
-			if (fit_addon) fit_addon.fit();
-		}, 100);
+		if (fit_addon) try { fit_addon.fit(); } catch(e) {}
 	});
 }
 
@@ -663,9 +657,10 @@ function connect() {
 			last_sgr = sgrMatches[sgrMatches.length - 1];
 		}
 		
-		// Silently absorb server-initiated keepalive ping (sent every 45s from Perl
-		// to keep the WebSocket alive regardless of browser tab throttling).
-		if (text === '__SERVER_PING__') { return; }
+		// Browser-side keepalive ping from server — absorb silently, never display.
+		if (text === "__SERVER_PING__") {
+			return;
+		}
 
 		// Check for special backend signals
 		if (text === "__CLIENT_CONFIG__" || text.startsWith("__CLIENT_CONFIG__:")) {
@@ -684,7 +679,7 @@ function connect() {
 		}
 		if (text.startsWith("__AWAITING_NAME__")) {
 			const _nameType = parseInt(text.split(":")[1] || "0");
-			awaiting_name_cap = (_nameType === 3); // capitalize only for person-name lookup
+			awaiting_name_cap = (_nameType > 0); // capitalize only for person-name lookup
 			awaiting_name = true;
 			const was_submitted = expect_gname_submitted;
 			expect_gname = false;
@@ -730,7 +725,7 @@ function connect() {
 					five_waiting_end = false;
 					five_line_buffer = "";
 				}
-			}, 1000);
+			}, 30000);
 			return;
 		}
 		if (text === "__FIVE_PROMPT__") {
@@ -742,7 +737,7 @@ function connect() {
 					five_waiting_end = false;
 					five_line_buffer = "";
 				}
-			}, 1000);
+			}, 30000);
 			return;
 		}
 		if (text === "__FIVE_END__") {
@@ -1237,6 +1232,66 @@ function toggleOverlay(id) {
 	});
 
 	document.addEventListener('mouseup', () => { dragging = false; });
+})();
+
+// Drag-to-resize for sidebar split
+(function() {
+	let dragging = false;
+	let startX = 0;
+	let startWidth = 0;
+
+	function startDrag(x) {
+		const container = document.getElementById('terminal-container');
+		dragging = true;
+		startX = x;
+		startWidth = container.offsetWidth;
+		document.body.style.cursor = 'ew-resize';
+		document.body.style.userSelect = 'none';
+		document.body.style.webkitUserSelect = 'none';
+	}
+
+	function doDrag(x) {
+		if (!dragging) return;
+		const container = document.getElementById('terminal-container');
+		const mainLayout = document.getElementById('main-layout');
+		const delta = x - startX;
+		const maxWidth = mainLayout.offsetWidth - 200; // leave at least 200px for sidebar
+		const newWidth = Math.min(maxWidth, Math.max(300, startWidth + delta));
+		container.style.flex = 'none';
+		container.style.width = newWidth + 'px';
+		if (fit_addon) try { fit_addon.fit(); } catch(e) {}
+	}
+
+	function endDrag() {
+		if (!dragging) return;
+		dragging = false;
+		document.body.style.cursor = '';
+		document.body.style.userSelect = '';
+		document.body.style.webkitUserSelect = '';
+		if (fit_addon) try { fit_addon.fit(); } catch(e) {}
+	}
+
+	document.addEventListener('mousedown', e => {
+		const handle = document.getElementById('sidebar-drag-handle');
+		if (!handle || !handle.contains(e.target)) return;
+		startDrag(e.clientX);
+		e.preventDefault();
+	});
+	document.addEventListener('mousemove', e => { doDrag(e.clientX); });
+	document.addEventListener('mouseup', () => endDrag());
+
+	document.addEventListener('touchstart', e => {
+		const handle = document.getElementById('sidebar-drag-handle');
+		if (!handle || !handle.contains(e.target)) return;
+		startDrag(e.touches[0].clientX);
+		e.preventDefault();
+	}, { passive: false });
+	document.addEventListener('touchmove', e => {
+		if (!dragging) return;
+		doDrag(e.touches[0].clientX);
+		e.preventDefault();
+	}, { passive: false });
+	document.addEventListener('touchend', () => endDrag());
 })();
 
 async function sendToBBS() {

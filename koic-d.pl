@@ -13,8 +13,8 @@ use MIME::Base64 qw(encode_base64 decode_base64);
 use Encode qw(encode FB_DEFAULT);
 use IO::Handle;
 
-# KOIC: Kevin's Own ISCABBS Client - Desktop v3.7.6 - re-add browser keep-alive
-my $Code_version = '3.7.6';
+# KOIC: Kevin's Own ISCABBS Client
+my $Code_version = '3.7.9'; #restore lost __SERVER_PING__ keepalive (browser-side timeout fix) 
 
 $| = 1;
 $SIG{PIPE} = 'IGNORE';
@@ -276,13 +276,14 @@ websocket '/bbs' => sub {
         bbs_queue_write($s, pack('C2', IAC, NOP));
     });
 
-    # Browser-side keepalive: send __SERVER_PING__ every 45s so the browser
-    # WebSocket stays alive even when the tab is backgrounded and the browser
-    # throttles the JS setInterval that would otherwise send __PING__.
-    $sessions{$tx_id}->{browser_ping_id} = Mojo::IOLoop->recurring(45 => sub {
+    # Browser-side keepalive: send __SERVER_PING__ to the browser every 45s to
+    # prevent the reverse proxy from cutting the WebSocket on the server->browser leg.
+    # JS must absorb this silently (see koic.js onmessage).
+    $sessions{$tx_id}->{server_ping_id} = Mojo::IOLoop->recurring(45 => sub {
         my $s = $sessions{$keepalive_tx};
         return unless $s && $s->{c};
-        eval { $s->{c}->send({binary => '__SERVER_PING__'}); 1 };
+# PING REPORT       print STDOUT "[SERVER_PING] sent to tx=$keepalive_tx\n";
+        eval { $s->{c}->send({binary => "__SERVER_PING__"}); 1 };
     });
 
     Mojo::IOLoop->singleton->reactor->io($sock => sub {
@@ -420,13 +421,13 @@ websocket '/bbs' => sub {
                         print $fh "[BLOCKED] Post from enemy '$sender'\n";
                         $s->{blocked_post} = 1;
                         # Don't send the post to the browser, but do show a clear notice.
-                        my $notice = "\r\n\x1b[1;31m[KOIC BLOCKED Post from $sender]\x1b[0m\r\n";
+                        my $notice = "\r\n[Blocked post from $sender]\r\n";
                         $to_browser .= $notice;
                         # Also send to Ctrl-X viewer.
                         my $b64 = encode_base64($s->{post_buffer} // '', '');
                         $c->send({binary => "__BLOCKED_CAPTURE__:post:incoming:$sender:$b64"});
                     } else {
-                        $to_browser .= $s->{post_buffer};
+                        $to_browser .= "\r\n" . $s->{post_buffer};
                     }
                     $s->{post_buffer} = '';
                     $s->{just_finished_post} = 1;  # Mark that post just ended; next MORE_PROMPT will be final
@@ -649,8 +650,7 @@ websocket '/bbs' => sub {
     $c->on(message => sub { 
         my ($c, $msg) = @_;
         my $s = $sessions{$tx_id};
-		print $fh "[MSG] " . length($msg) . " bytes" .
-            ($s->{input_mode} eq 'PASSWORD' ? ": (password suppressed)" : ": " . substr($msg, 0, 40)) . "\n";
+		print $fh "[MSG] " . length($msg) . " bytes: " . substr($msg, 0, 40) . "\n";
         # Browser-side WebSocket keepalive ping (sent every ~2.5 min by koic.js).
         # Absorb silently so the reverse proxy sees activity and doesn't cut the connection.
         if ($msg eq '__PING__') {
@@ -1110,8 +1110,8 @@ sub cleanup_session {
     my ($tx_id) = @_;
     my $s = delete $sessions{$tx_id};
     if ($s) {
-        Mojo::IOLoop->remove($s->{keepalive_id})    if $s->{keepalive_id};
-        Mojo::IOLoop->remove($s->{browser_ping_id}) if $s->{browser_ping_id};
+        Mojo::IOLoop->remove($s->{keepalive_id}) if $s->{keepalive_id};
+        Mojo::IOLoop->remove($s->{server_ping_id}) if $s->{server_ping_id};
         Mojo::IOLoop->singleton->reactor->remove($s->{sock});
         $s->{sock}->close;
     }
@@ -1329,6 +1329,7 @@ __DATA__
             </div>
         </div>
         
+        <div id="sidebar-drag-handle" title="Drag to resize" aria-hidden="true"></div>
         <div id="desktop-sidebar">
             <h3>Navigation</h3>
             <div class="button-group">
